@@ -74,14 +74,18 @@ public class FlutterBackgroundServicePlugin implements FlutterPlugin, MethodCall
     }
 
     private void start() {
-        WatchdogReceiver.enqueue(context);
-        boolean isForeground = config.isForeground();
-        Intent intent = new Intent(context, BackgroundService.class);
+        try {
+            WatchdogReceiver.enqueue(context);
+            boolean isForeground = config.isForeground();
+            Intent intent = new Intent(context, BackgroundService.class);
 
-        if (isForeground) {
-            ContextCompat.startForegroundService(context, intent);
-        } else {
-            context.startService(intent);
+            if (isForeground) {
+                ContextCompat.startForegroundService(context, intent);
+            } else {
+                context.startService(intent);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
