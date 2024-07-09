@@ -23,42 +23,50 @@ public class WatchdogReceiver extends BroadcastReceiver {
     }
 
     public static void enqueue(Context context, int millis) {
-        Intent intent = new Intent(context, WatchdogReceiver.class);
-        intent.setAction(ACTION_RESPAWN);
-        AlarmManager manager = (AlarmManager) context.getSystemService(ALARM_SERVICE);
+        try {
+            Intent intent = new Intent(context, WatchdogReceiver.class);
+            intent.setAction(ACTION_RESPAWN);
+            AlarmManager manager = (AlarmManager) context.getSystemService(ALARM_SERVICE);
 
-        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            flags |= PendingIntent.FLAG_MUTABLE;
-        }
+            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                flags |= PendingIntent.FLAG_MUTABLE;
+            }
 
-        PendingIntent pIntent = PendingIntent.getBroadcast(context, QUEUE_REQUEST_ID, intent, flags);
+            PendingIntent pIntent = PendingIntent.getBroadcast(context, QUEUE_REQUEST_ID, intent, flags);
 
-        // Check is background service every 5 seconds
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-          // Android 13 (SDK 33) requires apps to declare android.permission.SCHEDULE_EXACT_ALARM to use setExact
-          // Android 14 (SDK 34) takes this further and requires that apps explicitly ask for user permission before
-          //   using setExact.
-          // On these versions, use setAndAllowWhileIdle instead - it is _almost_ the same, but allows the OS to delay
-          // the alarm a bit to minimize device wake-ups
-          AlarmManagerCompat.setAndAllowWhileIdle(manager, AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + millis, pIntent);
-        } else {
-          AlarmManagerCompat.setExact(manager, AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + millis, pIntent);
+            // Check is background service every 5 seconds
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                // Android 13 (SDK 33) requires apps to declare android.permission.SCHEDULE_EXACT_ALARM to use setExact
+                // Android 14 (SDK 34) takes this further and requires that apps explicitly ask for user permission before
+                //   using setExact.
+                // On these versions, use setAndAllowWhileIdle instead - it is _almost_ the same, but allows the OS to delay
+                // the alarm a bit to minimize device wake-ups
+                AlarmManagerCompat.setAndAllowWhileIdle(manager, AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + millis, pIntent);
+            } else {
+                AlarmManagerCompat.setExact(manager, AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + millis, pIntent);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
     public static void remove(Context context) {
-        Intent intent = new Intent(context, WatchdogReceiver.class);
-        intent.setAction(ACTION_RESPAWN);
+        try {
+            Intent intent = new Intent(context, WatchdogReceiver.class);
+            intent.setAction(ACTION_RESPAWN);
 
-        int flags = PendingIntent.FLAG_CANCEL_CURRENT;
-        if (SDK_INT >= Build.VERSION_CODES.S) {
-            flags |= PendingIntent.FLAG_MUTABLE;
+            int flags = PendingIntent.FLAG_CANCEL_CURRENT;
+            if (SDK_INT >= Build.VERSION_CODES.S) {
+                flags |= PendingIntent.FLAG_MUTABLE;
+            }
+
+            PendingIntent pi = PendingIntent.getBroadcast(context, WatchdogReceiver.QUEUE_REQUEST_ID, intent, flags);
+            AlarmManager alarmManager = (AlarmManager) context.getSystemService(ALARM_SERVICE);
+            alarmManager.cancel(pi);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-
-        PendingIntent pi = PendingIntent.getBroadcast(context, WatchdogReceiver.QUEUE_REQUEST_ID, intent, flags);
-        AlarmManager alarmManager = (AlarmManager) context.getSystemService(ALARM_SERVICE);
-        alarmManager.cancel(pi);
     }
 
     @Override

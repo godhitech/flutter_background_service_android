@@ -88,43 +88,51 @@ public class BackgroundService extends Service implements MethodChannel.MethodCa
 
         FlutterBackgroundServicePlugin.servicePipe.addListener(listener);
 
-        config = new Config(this);
-        mainHandler = new Handler(Looper.getMainLooper());
+        try {
+            config = new Config(this);
+            mainHandler = new Handler(Looper.getMainLooper());
 
-        String notificationChannelId = config.getNotificationChannelId();
-        if (notificationChannelId == null) {
-            this.notificationChannelId = "FOREGROUND_DEFAULT";
-            createNotificationChannel();
-        } else {
-            this.notificationChannelId = notificationChannelId;
+            String notificationChannelId = config.getNotificationChannelId();
+            if (notificationChannelId == null) {
+                this.notificationChannelId = "FOREGROUND_DEFAULT";
+                createNotificationChannel();
+            } else {
+                this.notificationChannelId = notificationChannelId;
+            }
+
+            notificationTitle = config.getInitialNotificationTitle();
+            notificationContent = config.getInitialNotificationContent();
+            notificationId = config.getForegroundNotificationId();
+            updateNotificationInfo();
+            onStartCommand(null, -1, -1);
+        } catch (Exception e) {
+            Log.e(TAG, e.getMessage());
         }
-
-        notificationTitle = config.getInitialNotificationTitle();
-        notificationContent = config.getInitialNotificationContent();
-        notificationId = config.getForegroundNotificationId();
-        updateNotificationInfo();
-        onStartCommand(null, -1, -1);
     }
 
     @Override
     public void onDestroy() {
-        if (!isManuallyStopped) {
-            WatchdogReceiver.enqueue(this);
-        } else {
-            config.setManuallyStopped(true);
-        }
-        stopForeground(true);
-        isRunning.set(false);
+        try {
+            if (!isManuallyStopped) {
+                WatchdogReceiver.enqueue(this);
+            } else {
+                config.setManuallyStopped(true);
+            }
+            stopForeground(true);
+            isRunning.set(false);
 
-        if (backgroundEngine != null) {
-            backgroundEngine.getServiceControlSurface().detachFromService();
-            backgroundEngine.destroy();
-            backgroundEngine = null;
-        }
+            if (backgroundEngine != null) {
+                backgroundEngine.getServiceControlSurface().detachFromService();
+                backgroundEngine.destroy();
+                backgroundEngine = null;
+            }
 
-        FlutterBackgroundServicePlugin.servicePipe.removeListener(listener);
-        methodChannel = null;
-        dartEntrypoint = null;
+            FlutterBackgroundServicePlugin.servicePipe.removeListener(listener);
+            methodChannel = null;
+            dartEntrypoint = null;
+        } catch (Exception e) {
+            Log.e(TAG, e.getMessage());
+        }
         super.onDestroy();
     }
 
@@ -136,16 +144,20 @@ public class BackgroundService extends Service implements MethodChannel.MethodCa
     };
 
     private void createNotificationChannel() {
-        if (SDK_INT >= Build.VERSION_CODES.O) {
-            CharSequence name = "Background Service";
-            String description = "Executing process in background";
+        try {
+            if (SDK_INT >= Build.VERSION_CODES.O) {
+                CharSequence name = "Background Service";
+                String description = "Executing process in background";
 
-            int importance = NotificationManager.IMPORTANCE_LOW;
-            NotificationChannel channel = new NotificationChannel(notificationChannelId, name, importance);
-            channel.setDescription(description);
+                int importance = NotificationManager.IMPORTANCE_LOW;
+                NotificationChannel channel = new NotificationChannel(notificationChannelId, name, importance);
+                channel.setDescription(description);
 
-            NotificationManager notificationManager = getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
+                NotificationManager notificationManager = getSystemService(NotificationManager.class);
+                notificationManager.createNotificationChannel(channel);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, e.getMessage());
         }
     }
 
@@ -257,8 +269,12 @@ public class BackgroundService extends Service implements MethodChannel.MethodCa
 
     @Override
     public void onTaskRemoved(Intent rootIntent) {
-        if (isRunning.get()) {
-            WatchdogReceiver.enqueue(getApplicationContext(), 1000);
+        try {
+            if (isRunning.get()) {
+                WatchdogReceiver.enqueue(getApplicationContext(), 1000);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -350,6 +366,8 @@ public class BackgroundService extends Service implements MethodChannel.MethodCa
             }
         } catch (JSONException e) {
             Log.e(TAG, e.getMessage());
+            e.printStackTrace();
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
