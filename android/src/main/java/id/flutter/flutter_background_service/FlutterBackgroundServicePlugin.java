@@ -27,7 +27,6 @@ import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
-import io.flutter.plugin.common.PluginRegistry.Registrar;
 
 /**
  * FlutterBackgroundServicePlugin
@@ -44,10 +43,6 @@ public class FlutterBackgroundServicePlugin implements FlutterPlugin, MethodCall
 
     public static final Pipe servicePipe = new Pipe();
     public static final Pipe mainPipe = new Pipe();
-
-    public static void registerWith(FlutterEngine engine){
-        Log.d(TAG, "registering with FlutterEngine");
-    }
 
     private final Pipe.PipeListener listener = new Pipe.PipeListener() {
         @Override
